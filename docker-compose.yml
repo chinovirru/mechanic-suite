@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # Frontend Service - React Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mechanic-frontend
+    ports:
+      - "3030:5173"
+    environment:
+      - VITE_APP_BASE_NAME=/
+      - VITE_APP_VERSION=v1.6.0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - mechanic-network
+    depends_on:
+      - backend
+    command: yarn start
+
+  # Backend Service - Laravel 12
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mechanic-backend
+    ports:
+      - "80:80"
+    environment:
+      - APP_NAME="Mecanica Alvaro"
+      - APP_ENV=local
+      - APP_KEY=base64:l+z76lkXhnpk+DZ/37GaSjQardO1Qng4lam8Fhr4q/Y=
+      - APP_DEBUG=true
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=mechanic
+      - DB_USERNAME=root
+      - DB_PASSWORD=root_password
+    volumes:
+      - ./backend/site:/app/site
+    networks:
+      - mechanic-network
+    depends_on:
+      - mysql
+    command: >
+      sh -c "cd /app/site &&
+             chown -R www-data:www-data /app/site/storage /app/site/bootstrap/cache &&
+             chmod -R 775 /app/site/storage /app/site/bootstrap/cache &&
+             composer install &&
+             php artisan migrate --force &&
+             apache2-foreground"
+
+  # MySQL Service
+  mysql:
+    image: mysql:8.4
+    container_name: mechanic-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=mechanic
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - mechanic-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+
+  # Composer Service - For dependency management
+  composer:
+    image: composer:latest
+    container_name: mechanic-composer
+    volumes:
+      - ./backend/site:/app
+    working_dir: /app
+    networks:
+      - mechanic-network
+    profiles:
+      - tools
+
+volumes:
+  mysql_data:
+
+networks:
+  mechanic-network:
+    driver: bridge
