@@ -1,0 +1,30 @@
+# Mechanic Suite - Monorepo
+
+# Docker
+docker-compose.override.yml
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Environment variables (si decides tener un .env en la raíz)
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+
+# Documentation (opcional)
+# *.md
